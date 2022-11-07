@@ -2,12 +2,15 @@
 <svg
    class="img-fluid"
    id="outputsvg"
-   width="2919.2524"
-   height="2317.4375"
-   viewBox="0 0 29192.525 23174.375"
+   width="2569.051"
+   height="2379.7913"
+   viewBox="0 0 25690.511 23797.912"
    version="1.1"
    sodipodi:docname="spectrum.svg"
    inkscape:version="1.1 (c68e22c387, 2021-05-23)"
+   inkscape:export-filename="E:\PROJECT\SITE\PERSONAL\SPECTRUM\LOGO\spectrum.png"
+   inkscape:export-xdpi="90"
+   inkscape:export-ydpi="90"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
@@ -35,7 +38,7 @@
      fit-margin-right="100"
      fit-margin-bottom="100"
      inkscape:zoom="0.1767767"
-     inkscape:cx="-223.44574"
+     inkscape:cx="-234.75945"
      inkscape:cy="1128.5424"
      inkscape:window-width="2721"
      inkscape:window-height="1409"
@@ -45,7 +48,7 @@
      inkscape:current-layer="outputsvg" />
   <g
      id="g872"
-     transform="matrix(0.62049848,0,0,0.62049848,6878.2313,1000)">
+     transform="matrix(0.62049848,0,0,0.62049848,5127.2246,1000)">
     <g
        id="lF9P8d44fWlWArUK52kq1o"
        fill="#f1543f"
@@ -161,12 +164,12 @@
   </g>
   <text
      xml:space="preserve"
-     transform="matrix(10.628324,0,0,10.628324,2852.7743,-12799.113)"
+     transform="matrix(10.628324,0,0,10.628324,2911.2301,-13316.27)"
      id="text3252"
      style="font-style:normal;font-weight:normal;font-size:500px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect3254);fill:#363636;fill-opacity:1;stroke:none"><tspan
        x="-195.82422"
-       y="3285.5929"
-       id="tspan1402"><tspan
-         style="font-family:Rubik;-inkscape-font-specification:Rubik"
-         id="tspan1400">SPECTRUM</tspan></tspan></text>
+       y="3291.4188"
+       id="tspan12557"><tspan
+         style="font-family:Raleway;-inkscape-font-specification:Raleway"
+         id="tspan12555">Spectrum</tspan></tspan></text>
 </svg>
