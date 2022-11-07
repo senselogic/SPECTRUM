@@ -8,34 +8,36 @@
 
 body
 {
-    padding: 0.25vw;
+    padding: 1vw;
 }
 
 input, textarea
 {
     width: 100%;
     border: 2px solid #CCCCCC;
-    padding: 0.25vw;
+    padding: 1vw;
 
     background-color : #FFFFFF;
 
-    font-size: 1.4vw;
+    font-size: 1.5vw;
     font-family: monospace;
     font-weight: 900;
     color : #000080;
+    text-align: center;
 }
 
 .grid
 {
-    margin-bottom: 0.25vw;
+    margin-bottom: 1vw;
 
     display: grid;
     grid-template-columns: repeat( 10, 1fr );
-    gap: 0.25vw;
+    gap: 1vw 1vw;
 }
 
 .color
 {
+    outline: 1px solid #EEEEEE;
     padding-top: 0.5vw;
     padding-bottom: 0.5vw;
 
@@ -44,11 +46,11 @@ input, textarea
     justify-content: center;
     align-items: center;
 
-    font-size : 1.4vw;
+    font-size : 1.25vw;
     font-weight: 900;
     font-family: monospace;
     color: #FFFFFF;
-    text-shadow: 0 0 2px #000000;
+    text-shadow: 0 1px 4px rgba( 0, 0, 0, 0.8 );
 }
 
 .color:nth-child( 6 )
@@ -58,7 +60,7 @@ input, textarea
 </style>
 <div>
     <div class="grid">
-        <input id="color-input" value="#0000FF" placeholder="Color" oninput="UpdateColors()">
+        <input id="color-input" value="#98A7F2" placeholder="Color" oninput="UpdateColors()">
         <input id="step-input" value="50" placeholder="Step" oninput="UpdateColors()">
     </div>
     <div id="color-palette" class="grid">
