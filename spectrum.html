@@ -1,0 +1,167 @@
+<meta charset="utf-8">
+<style>
+*
+{
+    margin : 0;
+    padding : 0;
+}
+
+input, textarea
+{
+    background-color : #eee;
+    color : #000;
+}
+
+.header
+{
+}
+
+.color-palette
+{
+    display: grid;
+    grid-template-columns: repeat( 10, 1fr );
+    gap: 0.25vw;
+}
+
+.color
+{
+    padding-top: 0.5vw;
+    padding-bottom: 0.5vw;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-size : 1.4vw;
+    font-weight: 900;
+    font-family: monospace;
+    color: #FFFFFF;
+    text-shadow: 0 0 2px #000000;
+}
+
+.color:nth-child( 6 )
+{
+    outline: 2px solid #FFFF00;
+}
+</style>
+<div>
+    <div class="header">
+        <input id="color-input" value="#0000FF" placeholder="Color" oninput="UpdateColors()">
+        <input id="step-input" value="50" placeholder="Step" oninput="UpdateColors()">
+    </div>
+    <div id="color-palette" class="color-palette">
+    </div>
+</div>
+<script>
+    // -- TYPES
+
+    class COLOR
+    {
+        // -- CONSTRUCTORS
+
+        constructor(
+            text = "000000",
+            lightness = 500
+            )
+        {
+            this.SetFromText( text );
+            this.InterpolationFactor = 0;
+            this.InterpolationText = "";
+
+            if ( lightness < 500 )
+            {
+                this.InterpolationFactor = lightness / 500;
+                this.InterpolationText = "darken " + parseInt( 100 - this.InterpolationFactor * 100 ) + "%";
+                this.RedComponent = parseInt( this.RedComponent * this.InterpolationFactor );
+                this.GreenComponent = parseInt( this.GreenComponent * this.InterpolationFactor );
+                this.BlueComponent = parseInt( this.BlueComponent * this.InterpolationFactor );
+                this.Interpolation = "darken " + parseInt( lightness / 500 );
+            }
+            else if ( lightness > 500 )
+            {
+                this.InterpolationFactor = ( lightness - 500 ) / 500;
+                this.InterpolationText = "lighten " + parseInt( this.InterpolationFactor * 100 ) + "%";
+                this.RedComponent = parseInt( this.RedComponent + ( 255 - this.RedComponent ) * this.InterpolationFactor );
+                this.GreenComponent = parseInt( this.GreenComponent + ( 255 - this.GreenComponent ) * this.InterpolationFactor );
+                this.BlueComponent = parseInt( this.BlueComponent + ( 255 - this.BlueComponent ) * this.InterpolationFactor );
+            }
+        }
+
+        // -- INQUIRIES
+
+        GetComponentText(
+            component
+            )
+        {
+            return ( "0" + component.toString( 16 ) ).slice( -2 ).toUpperCase();
+        }
+
+        // ~~
+
+        GetText(
+            )
+        {
+            return (
+                "#"
+                + this.GetComponentText( this.RedComponent )
+                + this.GetComponentText( this.GreenComponent )
+                + this.GetComponentText( this.BlueComponent )
+                );
+        }
+
+        // -- OPERATIONS
+
+        SetFromText(
+            text
+            )
+        {
+            text = text.split( "#" ).join( "" ) + "000000";
+
+            this.RedComponent = parseInt( text.slice( 0, 2 ), 16 );
+            this.GreenComponent = parseInt( text.slice( 2, 4 ), 16 );
+            this.BlueComponent = parseInt( text.slice( 4, 6 ), 16 );
+        }
+    }
+
+    // -- FUNCTIONS
+
+    function UpdateColors(
+        )
+    {
+        var
+            color_lightness,
+            color_lightness_offset,
+            color_lightness_step,
+            color_palette_text;
+
+        color_text = document.getElementById( "color-input" ).value;
+        color_lightness_step = parseInt( document.getElementById( "step-input" ).value );
+        color_palette_text = "";
+
+        for ( color_lightness_offset = 0;
+              color_lightness_offset < 100;
+              color_lightness_offset += color_lightness_step )
+        {
+            for ( base_color_lightness = 0;
+                  base_color_lightness < 1000;
+                  base_color_lightness += 100 )
+            {
+                color_lightness = base_color_lightness + color_lightness_offset;
+                color = new COLOR( color_text, color_lightness );
+
+                color_palette_text
+                    += '<div class="color" style="background-color: ' + color.GetText() + '">\n'
+                       + '<div>' + color_lightness + '</div>\n'
+                       + '<div>' + color.GetText() + '</div>\n'
+                       + '<div>' + color.RedComponent + ' ' + color.GreenComponent + ' ' + color.BlueComponent + '</div>\n'
+                       + '<div>' + color.InterpolationText + '</div>\n'
+                       + '</div>\n';
+            }
+        }
+
+        document.getElementById( "color-palette" ).innerHTML = color_palette_text;
+    }
+
+    // -- STATEMENTS
+
+    UpdateColors();
+</script>
