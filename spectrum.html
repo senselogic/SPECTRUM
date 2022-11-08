@@ -19,8 +19,8 @@ input, textarea
 
     background-color : #FFFFFF;
 
-    font-size: 1.5vw;
     font-family: monospace;
+    font-size: 1.5vw;
     font-weight: 900;
     color : #000080;
     text-align: center;
@@ -35,6 +35,18 @@ input, textarea
     gap: 1vw 1vw;
 }
 
+.label
+{
+    display: flex;
+    justify-content: end;
+    align-items: center;
+
+    font-family: monospace;
+    font-size: 1.5vw;
+    font-weight: 900;
+    color: #AAAAAA;
+}
+
 .color
 {
     outline: 1px solid #EEEEEE;
@@ -46,22 +58,35 @@ input, textarea
     justify-content: center;
     align-items: center;
 
+    font-family: monospace;
     font-size : 1.25vw;
     font-weight: 900;
-    font-family: monospace;
     color: #FFFFFF;
     text-shadow: 0 1px 4px rgba( 0, 0, 0, 0.8 );
 }
 
-.color:nth-child( 6 )
+#color-palette
+{
+    margin-top: 2vw;
+}
+
+#color-palette:nth-child( 6 )
 {
     color: #FFFF00;
 }
 </style>
 <div>
     <div class="grid">
-        <input id="color-input" value="#98A7F2" placeholder="Color" oninput="UpdateColors()">
-        <input id="step-input" value="50" placeholder="Step" oninput="UpdateColors()">
+        <input id="reference-color-input" value="#98A7F2" placeholder="Color" oninput="UpdateColors()">
+        <div id="reference-color" class="color"></div>
+        <div></div>
+        <div class="label"><span>Search</span></div>
+        <input id="searched-color-input" value="#B7C3EE" placeholder="Search" oninput="UpdateColors()">
+        <div id="searched-color" class="color"></div>
+        <div id="best-color" class="color"></div>
+        <div></div>
+        <div class="label"><span>Step</span></div>
+        <input id="color-lightness-step-input" value="50" placeholder="Step" oninput="UpdateColors()">
     </div>
     <div id="color-palette" class="grid">
     </div>
@@ -79,6 +104,7 @@ input, textarea
             )
         {
             this.SetFromText( text );
+            this.Lightness = lightness;
             this.InterpolationFactor = 0;
             this.InterpolationText = "default";
 
@@ -113,13 +139,56 @@ input, textarea
         // ~~
 
         GetText(
+            prefix = ""
             )
         {
             return (
-                "#"
+                prefix
                 + this.GetComponentText( this.RedComponent )
                 + this.GetComponentText( this.GreenComponent )
                 + this.GetComponentText( this.BlueComponent )
+                );
+        }
+
+        // ~~
+
+        GetCode(
+            id = ""
+            )
+        {
+            return (
+                '<div id="' + id + '" class="color" style="background-color: ' + this.GetText( "#" ) + '">\n'
+                + '<div>' + this.Lightness + '</div>\n'
+                + '<div>' + this.GetText( "#" ) + '</div>\n'
+                + '<div>' + this.RedComponent + ' ' + this.GreenComponent + ' ' + this.BlueComponent + '</div>\n'
+                + '<div>' + this.InterpolationText + '</div>\n'
+                + '</div>\n'
+                );
+        }
+
+        // ~~
+
+        GetDistance(
+            color
+            )
+        {
+            var
+                average_red_component,
+                red_component_offset,
+                green_component_offset,
+                blue_component_offset;
+
+            average_red_component = parseInt( ( this.RedComponent + color.RedComponent ) / 2 );
+            red_component_offset = this.RedComponent - color.RedComponent;
+            green_component_offset = this.GreenComponent - color.GreenComponent;
+            blue_component_offset = this.BlueComponent - color.BlueComponent;
+
+            return (
+                Math.sqrt(
+                    ( ( ( 512 + average_red_component ) * red_component_offset * red_component_offset ) >> 8 )
+                    + 4 * green_component_offset * green_component_offset
+                    + ( ( ( 767 - average_red_component ) * blue_component_offset * blue_component_offset ) >> 8 )
+                    )
                 );
         }
 
@@ -143,14 +212,32 @@ input, textarea
         )
     {
         var
+            base_color_lightness,
+            best_color,
+            best_color_distance,
+            color,
+            color_distance,
             color_lightness,
             color_lightness_offset,
             color_lightness_step,
-            color_palette_text;
+            color_palette_code,
+            reference_color,
+            reference_color_text,
+            searched_color,
+            searched_color_text;
 
-        color_text = document.getElementById( "color-input" ).value;
-        color_lightness_step = parseInt( document.getElementById( "step-input" ).value );
-        color_palette_text = "";
+        reference_color_text = document.getElementById( "reference-color-input" ).value;
+        reference_color = new COLOR( reference_color_text );
+
+        color_lightness_step = parseInt( document.getElementById( "color-lightness-step-input" ).value );
+
+        searched_color_text = document.getElementById( "searched-color-input" ).value;
+        searched_color = new COLOR( searched_color_text );
+
+        document.getElementById( "reference-color" ).outerHTML = reference_color.GetCode( "reference-color" );
+        document.getElementById( "searched-color" ).outerHTML = searched_color.GetCode( "searched-color" );
+
+        color_palette_code = "";
 
         for ( color_lightness_offset = 0;
               color_lightness_offset < 100;
@@ -161,19 +248,34 @@ input, textarea
                   base_color_lightness += 100 )
             {
                 color_lightness = base_color_lightness + color_lightness_offset;
-                color = new COLOR( color_text, color_lightness );
+                color = new COLOR( reference_color_text, color_lightness );
 
-                color_palette_text
-                    += '<div class="color" style="background-color: ' + color.GetText() + '">\n'
-                       + '<div>' + color_lightness + '</div>\n'
-                       + '<div>' + color.GetText() + '</div>\n'
-                       + '<div>' + color.RedComponent + ' ' + color.GreenComponent + ' ' + color.BlueComponent + '</div>\n'
-                       + '<div>' + color.InterpolationText + '</div>\n'
-                       + '</div>\n';
+                color_palette_code += color.GetCode();
             }
         }
 
-        document.getElementById( "color-palette" ).innerHTML = color_palette_text;
+        document.getElementById( "color-palette" ).innerHTML = color_palette_code;
+
+        searched_color = new COLOR( searched_color_text );
+        best_color = null;
+        best_color_distance = 0;
+
+        for ( color_lightness = 0;
+              color_lightness <= 1000;
+              ++color_lightness )
+        {
+            color = new COLOR( reference_color_text, color_lightness );
+            color_distance = color.GetDistance( searched_color );
+
+            if ( best_color === null
+                 || color_distance < best_color_distance )
+            {
+                best_color = color;
+                best_color_distance = color_distance;
+            }
+        }
+
+        document.getElementById( "best-color" ).outerHTML = best_color.GetCode( "best-color" );
     }
 
     // -- STATEMENTS
