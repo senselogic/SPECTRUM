@@ -11,16 +11,16 @@ body
     padding: 1vw;
 }
 
-input, textarea
+input
 {
     width: 100%;
     border: 2px solid #CCCCCC;
-    padding: 1vw;
+    padding: 1vw 0;
 
     background-color : #FFFFFF;
 
     font-family: monospace;
-    font-size: 1.5vw;
+    font-size: 1.25vw;
     font-weight: 900;
     color : #000080;
     text-align: center;
@@ -198,11 +198,25 @@ input, textarea
             text
             )
         {
-            text = text.split( "#" ).join( "" ) + "000000";
+            var
+                component_text_array;
 
-            this.RedComponent = parseInt( text.slice( 0, 2 ), 16 );
-            this.GreenComponent = parseInt( text.slice( 2, 4 ), 16 );
-            this.BlueComponent = parseInt( text.slice( 4, 6 ), 16 );
+            component_text_array = text.split( " " );
+
+            if ( component_text_array.length === 3 )
+            {
+                this.RedComponent = parseInt( component_text_array[ 0 ] );
+                this.GreenComponent = parseInt( component_text_array[ 1 ] );
+                this.BlueComponent = parseInt( component_text_array[ 2 ] );
+            }
+            else
+            {
+                text = text.split( "#" ).join( "" ) + "000000";
+
+                this.RedComponent = parseInt( text.slice( 0, 2 ), 16 );
+                this.GreenComponent = parseInt( text.slice( 2, 4 ), 16 );
+                this.BlueComponent = parseInt( text.slice( 4, 6 ), 16 );
+            }
         }
     }
 
