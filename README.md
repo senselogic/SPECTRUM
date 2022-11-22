@@ -2,7 +2,9 @@
 
 # Spectrum
 
-Color palette generator.
+Stylus color palette generator.
+
+![](https://github.com/senselogic/SPECTRUM/blob/master/SCREENSHOT/sample.png)
 
 ## Version
 

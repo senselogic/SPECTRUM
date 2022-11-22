@@ -74,22 +74,34 @@ input
 {
     color: #FFFF00;
 }
+
+.code
+{
+    margin-top: 2vw;
+
+    font-family: monospace;
+    font-size: 1.25vw;
+    font-weight: 900;
+    color : #808080;
+}
 </style>
 <div>
     <div class="grid">
-        <input id="reference-color-input" value="#98A7F2" placeholder="Color" oninput="UpdateColors()">
-        <div id="reference-color" class="color"></div>
-        <div></div>
+        <input id="base-color-name-input" value="BlueColor" placeholder="Name" oninput="UpdateColors()">
+        <input id="base-color-input" value="#98A7F2" placeholder="Base" oninput="UpdateColors()">
+        <div id="base-color" class="color"></div>
+        <input id="base-lightness-step-input" value="50" placeholder="Step" oninput="UpdateColors()">
         <div class="label"><span>Search</span></div>
-        <input id="searched-color-input" value="#B7C3EE" placeholder="Search" oninput="UpdateColors()">
-        <div id="searched-color" class="color"></div>
-        <div id="best-color" class="color"></div>
-        <div></div>
-        <div class="label"><span>Step</span></div>
-        <input id="color-lightness-step-input" value="50" placeholder="Step" oninput="UpdateColors()">
+        <input id="reference-color-input" value="#B7C3EE" placeholder="Reference" oninput="UpdateColors()">
+        <div id="reference-color" class="color"></div>
+        <div id="closest-color" class="color"></div>
+        <div id="complement-color" class="color"></div>
+        <input id="complement-color-input" value="#C5C5C5" placeholder="Complement" oninput="UpdateColors()">
     </div>
     <div id="color-palette" class="grid">
     </div>
+    <xmp id="color-code" class="code">
+    </xmp>
 </div>
 <script>
     // -- TYPES
@@ -153,16 +165,43 @@ input
         // ~~
 
         GetCode(
-            id = ""
+            id = "",
+            color_is_interpolated = true
             )
         {
             return (
                 '<div id="' + id + '" class="color" style="background-color: ' + this.GetText( "#" ) + '">\n'
-                + '<div>' + this.Lightness + '</div>\n'
+                + '<div>' + ( color_is_interpolated ? this.Lightness : "<br>" ) + '</div>\n'
                 + '<div>' + this.GetText( "#" ) + '</div>\n'
                 + '<div>' + this.RedComponent + ' ' + this.GreenComponent + ' ' + this.BlueComponent + '</div>\n'
-                + '<div>' + this.InterpolationText + '</div>\n'
+                + '<div>' + ( color_is_interpolated ? this.InterpolationText  : "<br>" ) + '</div>\n'
                 + '</div>\n'
+                );
+        }
+
+        // ~~
+
+        GetLuminance(
+            )
+        {
+            return (
+                0.299 * this.RedComponent
+                + 0.587 * this.GreenComponent
+                + 0.114 * this.BlueComponent
+                );
+        }
+
+        // ~~
+
+        GetPerceivedLuminance(
+            )
+        {
+            return (
+                Math.sqrt(
+                    0.299 * this.RedComponent * this.RedComponent
+                    + 0.587 * this.GreenComponent * this.GreenComponent
+                    + 0.114 * this.BlueComponent * this.BlueComponent
+                    )
                 );
         }
 
@@ -172,24 +211,16 @@ input
             color
             )
         {
-            var
-                average_red_component,
-                red_component_offset,
-                green_component_offset,
-                blue_component_offset;
+            return Math.abs( this.GetLuminance() - color.GetLuminance() );
+        }
 
-            average_red_component = parseInt( ( this.RedComponent + color.RedComponent ) / 2 );
-            red_component_offset = this.RedComponent - color.RedComponent;
-            green_component_offset = this.GreenComponent - color.GreenComponent;
-            blue_component_offset = this.BlueComponent - color.BlueComponent;
+        // ~~
 
-            return (
-                Math.sqrt(
-                    ( ( ( 512 + average_red_component ) * red_component_offset * red_component_offset ) >> 8 )
-                    + 4 * green_component_offset * green_component_offset
-                    + ( ( ( 767 - average_red_component ) * blue_component_offset * blue_component_offset ) >> 8 )
-                    )
-                );
+        GetPerceivedDistance(
+            color
+            )
+        {
+            return Math.abs( this.GetPerceivedLuminance() - color.GetPerceivedLuminance() );
         }
 
         // -- OPERATIONS
@@ -226,70 +257,109 @@ input
         )
     {
         var
-            base_color_lightness,
-            best_color,
-            best_color_distance,
+            base_color,
+            base_lightness,
+            base_lightness_offset,
+            base_lightness_step,
+            base_color_text,
+            closest_color,
+            closest_color_distance,
             color,
+            color_code,
             color_distance,
             color_lightness,
-            color_lightness_offset,
-            color_lightness_step,
             color_palette_code,
+            complement_color,
+            complement_color_text,
             reference_color,
-            reference_color_text,
-            searched_color,
-            searched_color_text;
+            reference_color_text;
+
+        base_color_name = document.getElementById( "base-color-name-input" ).value;
+        base_color_text = document.getElementById( "base-color-input" ).value;
+        base_color = new COLOR( base_color_text );
 
         reference_color_text = document.getElementById( "reference-color-input" ).value;
         reference_color = new COLOR( reference_color_text );
 
-        color_lightness_step = parseInt( document.getElementById( "color-lightness-step-input" ).value );
+        complement_color_text = document.getElementById( "complement-color-input" ).value;
+        complement_color = new COLOR( complement_color_text );
 
-        searched_color_text = document.getElementById( "searched-color-input" ).value;
-        searched_color = new COLOR( searched_color_text );
+        document.getElementById( "base-color" ).outerHTML = base_color.GetCode( "base-color" );
+        document.getElementById( "reference-color" ).outerHTML = reference_color.GetCode( "reference-color", false );
+        document.getElementById( "complement-color" ).outerHTML = complement_color.GetCode( "complement-color", false );
 
-        document.getElementById( "reference-color" ).outerHTML = reference_color.GetCode( "reference-color" );
-        document.getElementById( "searched-color" ).outerHTML = searched_color.GetCode( "searched-color" );
+        base_lightness_step = parseInt( document.getElementById( "base-lightness-step-input" ).value );
 
         color_palette_code = "";
 
-        for ( color_lightness_offset = 0;
-              color_lightness_offset < 100;
-              color_lightness_offset += color_lightness_step )
+        for ( base_lightness_offset = 0;
+              base_lightness_offset < 100;
+              base_lightness_offset += base_lightness_step )
         {
-            for ( base_color_lightness = 0;
-                  base_color_lightness < 1000;
-                  base_color_lightness += 100 )
+            for ( base_lightness = 0;
+                  base_lightness < 1000;
+                  base_lightness += 100 )
             {
-                color_lightness = base_color_lightness + color_lightness_offset;
-                color = new COLOR( reference_color_text, color_lightness );
-
+                color_lightness = base_lightness + base_lightness_offset;
+                color = new COLOR( base_color_text, color_lightness );
                 color_palette_code += color.GetCode();
             }
         }
 
         document.getElementById( "color-palette" ).innerHTML = color_palette_code;
+        color_code = base_color_name + " = #" + base_color.GetText() + ";\n";
 
-        searched_color = new COLOR( searched_color_text );
-        best_color = null;
-        best_color_distance = 0;
+        for ( base_lightness = 0;
+              base_lightness < 1000;
+              base_lightness += 100 )
+        {
+            for ( base_lightness_offset = 0;
+                  base_lightness_offset < 100;
+                  base_lightness_offset += base_lightness_step )
+            {
+                color_lightness = base_lightness + base_lightness_offset;
+                color = new COLOR( base_color_text, color_lightness );
+
+                if ( color_lightness > 0
+                     && color_lightness != 500 )
+                {
+                    color_code
+                        += base_color_name
+                           + color_lightness
+                           + " = "
+                           + color.InterpolationText.split( " " )[ 0 ]
+                           + "( "
+                           + base_color_name
+                           + ", "
+                           + color.InterpolationText.split( " " )[ 1 ]
+                           + " );\n";
+                }
+            }
+        }
+
+        document.getElementById( "color-code" ).innerHTML = color_code;
+
+        reference_color = new COLOR( reference_color_text );
+
+        closest_color = null;
+        closest_color_distance = 0;
 
         for ( color_lightness = 0;
               color_lightness <= 1000;
               ++color_lightness )
         {
-            color = new COLOR( reference_color_text, color_lightness );
-            color_distance = color.GetDistance( searched_color );
+            color = new COLOR( base_color_text, color_lightness );
+            color_distance = color.GetPerceivedDistance( reference_color );
 
-            if ( best_color === null
-                 || color_distance < best_color_distance )
+            if ( closest_color === null
+                 || color_distance < closest_color_distance )
             {
-                best_color = color;
-                best_color_distance = color_distance;
+                closest_color = color;
+                closest_color_distance = color_distance;
             }
         }
 
-        document.getElementById( "best-color" ).outerHTML = best_color.GetCode( "best-color" );
+        document.getElementById( "closest-color" ).outerHTML = closest_color.GetCode( "closest-color" );
     }
 
     // -- STATEMENTS
