@@ -11,11 +11,11 @@ body
     padding: 1vw;
 }
 
-input
+input,
+select
 {
     width: 100%;
     border: 2px solid #CCCCCC;
-    padding: 1vw 0;
 
     background-color : #FFFFFF;
 
@@ -35,16 +35,12 @@ input
     gap: 1vw 1vw;
 }
 
-.label
+.column
 {
     display: flex;
-    justify-content: end;
-    align-items: center;
-
-    font-family: monospace;
-    font-size: 1.5vw;
-    font-weight: 900;
-    color: #AAAAAA;
+    flex-direction: column;
+    height: 100%;
+    justify-content: space-between;
 }
 
 .color
@@ -87,11 +83,19 @@ input
 </style>
 <div>
     <div class="grid">
-        <input id="base-color-name-input" value="BlueColor" placeholder="Name" oninput="UpdateColors()">
-        <input id="base-color-input" value="#98A7F2" placeholder="Base" oninput="UpdateColors()">
+        <input id="base-color-name-input" value="blue" placeholder="Name" oninput="UpdateColors()">
+        <div class="column">
+            <input id="base-color-input" value="#3B82F6" placeholder="Color" oninput="UpdateColors()">
+            <input id="base-color-shade-input" value="500" placeholder="Shade" oninput="UpdateColors()">
+            <input id="base-color-darken-input" value="11" placeholder="Darken" oninput="UpdateColors()">
+            <input id="base-color-lighten-input" value="8" placeholder="Lighten" oninput="UpdateColors()">
+        </div>
         <div id="base-color" class="color"></div>
-        <input id="base-lightness-step-input" value="50" placeholder="Step" oninput="UpdateColors()">
-        <div class="label"><span>Search</span></div>
+        <input id="base-shade-step-input" value="50" placeholder="Step" oninput="UpdateColors()">
+        <select id="computation-mode-select" value="Tailwind" oninput="UpdateColors()">
+            <option>Tailwind</option>
+            <option>Flow</option>
+        </select>
         <input id="reference-color-input" value="#B7C3EE" placeholder="Reference" oninput="UpdateColors()">
         <div id="reference-color" class="color"></div>
         <div id="closest-color" class="color"></div>
@@ -104,6 +108,11 @@ input
     </xmp>
 </div>
 <script>
+    // -- VARIABLES
+
+    var
+        ComputationMode = "Tailwind";
+
     // -- TYPES
 
     class COLOR
@@ -111,31 +120,61 @@ input
         // -- CONSTRUCTORS
 
         constructor(
-            text = "000000",
-            lightness = 500
+            base_color_text,
+            base_color_shade = 500,
+            base_color_darken = 8,
+            base_color_lighten = 11,
+            shade = 500
             )
         {
-            this.SetFromText( text );
-            this.Lightness = lightness;
-            this.InterpolationFactor = 0;
-            this.InterpolationText = "default";
+            var
+                interpolation_factor,
+                lightness_offset;
 
-            if ( lightness < 500 )
+            this.SetFromText( base_color_text );
+            this.Shade = shade;
+            this.InterpolationText = "default";
+            this.SetHueSaturationLightness();
+
+            if ( ComputationMode === "Tailwind" )
             {
-                this.InterpolationFactor = lightness / 500;
-                this.InterpolationText = "darken " + parseInt( 100 - this.InterpolationFactor * 100 ) + "%";
-                this.RedComponent = parseInt( this.RedComponent * this.InterpolationFactor );
-                this.GreenComponent = parseInt( this.GreenComponent * this.InterpolationFactor );
-                this.BlueComponent = parseInt( this.BlueComponent * this.InterpolationFactor );
-                this.Interpolation = "darken " + parseInt( lightness / 500 );
+                if ( shade < base_color_shade )
+                {
+                    lightness_offset = base_color_lighten * ( base_color_shade - shade ) / 100;
+                    this.InterpolationText = "lighten " + Math.round( lightness_offset ) + "%";
+
+                    this.LightnessComponent += lightness_offset;
+                    this.SetFromHueSaturationLightness();
+                }
+                else if ( shade > base_color_shade )
+                {
+                    lightness_offset = base_color_darken * ( shade - base_color_shade ) / 100;
+                    this.InterpolationText = "darken " + Math.round( lightness_offset ) + "%";
+
+                    this.LightnessComponent -= lightness_offset;
+                    this.SetFromHueSaturationLightness();
+                }
             }
-            else if ( lightness > 500 )
+            else
             {
-                this.InterpolationFactor = ( lightness - 500 ) / 500;
-                this.InterpolationText = "lighten " + parseInt( this.InterpolationFactor * 100 ) + "%";
-                this.RedComponent = parseInt( this.RedComponent + ( 255 - this.RedComponent ) * this.InterpolationFactor );
-                this.GreenComponent = parseInt( this.GreenComponent + ( 255 - this.GreenComponent ) * this.InterpolationFactor );
-                this.BlueComponent = parseInt( this.BlueComponent + ( 255 - this.BlueComponent ) * this.InterpolationFactor );
+                if ( shade < base_color_shade )
+                {
+                    interpolation_factor = shade / base_color_shade;
+                    this.InterpolationText = "darken " + Math.round( 100 - interpolation_factor * 100 ) + "%";
+
+                    this.RedComponent = Math.round( this.RedComponent * interpolation_factor );
+                    this.GreenComponent = Math.round( this.GreenComponent * interpolation_factor );
+                    this.BlueComponent = Math.round( this.BlueComponent * interpolation_factor );
+                }
+                else if ( shade > base_color_shade )
+                {
+                    interpolation_factor = ( shade - base_color_shade ) / base_color_shade;
+                    this.InterpolationText = "lighten " + Math.round( interpolation_factor * 100 ) + "%";
+
+                    this.RedComponent = Math.round( this.RedComponent + ( 255 - this.RedComponent ) * interpolation_factor );
+                    this.GreenComponent = Math.round( this.GreenComponent + ( 255 - this.GreenComponent ) * interpolation_factor );
+                    this.BlueComponent = Math.round( this.BlueComponent + ( 255 - this.BlueComponent ) * interpolation_factor );
+                }
             }
         }
 
@@ -171,9 +210,10 @@ input
         {
             return (
                 '<div id="' + id + '" class="color" style="background-color: ' + this.GetText( "#" ) + '">\n'
-                + '<div>' + ( color_is_interpolated ? this.Lightness : "<br>" ) + '</div>\n'
+                + '<div>' + ( color_is_interpolated ? this.Shade : "<br>" ) + '</div>\n'
                 + '<div>' + this.GetText( "#" ) + '</div>\n'
                 + '<div>' + this.RedComponent + ' ' + this.GreenComponent + ' ' + this.BlueComponent + '</div>\n'
+                + '<div>' + this.HueComponent + ' ' + this.SaturationComponent + ' ' + this.LightnessComponent + '</div>\n'
                 + '<div>' + ( color_is_interpolated ? this.InterpolationText  : "<br>" ) + '</div>\n'
                 + '</div>\n'
                 );
@@ -225,6 +265,151 @@ input
 
         // -- OPERATIONS
 
+        SetHueSaturationLightness(
+            )
+        {
+            var
+                normalized_blue,
+                normalized_green,
+                normalized_hue,
+                normalized_lightness,
+                normalized_red,
+                normalized_saturation,
+                maximum_value,
+                minimum_value,
+                difference;
+
+            normalized_red = this.RedComponent / 255;
+            normalized_green = this.GreenComponent / 255;
+            normalized_blue = this.BlueComponent / 255;
+
+            maximum_value = Math.max( normalized_red, normalized_green, normalized_blue );
+            minimum_value = Math.min( normalized_red, normalized_green, normalized_blue );
+
+            normalized_lightness = ( maximum_value + minimum_value ) / 2;
+
+            if ( maximum_value === minimum_value )
+            {
+                normalized_hue = normalized_saturation = 0;
+            }
+            else
+            {
+                difference = maximum_value - minimum_value;
+                normalized_saturation = normalized_lightness > 0.5 ? difference / ( 2 - maximum_value - minimum_value ) : difference / ( maximum_value + minimum_value );
+
+                if ( normalized_red === maximum_value )
+                {
+                    normalized_hue = ( normalized_green - normalized_blue ) / difference + ( normalized_green < normalized_blue ? 6 : 0 );
+                }
+                else if ( normalized_green === maximum_value )
+                {
+                    normalized_hue = ( normalized_blue - normalized_red ) / difference + 2;
+                }
+                else if ( normalized_blue === maximum_value )
+                {
+                    normalized_hue = ( normalized_red - normalized_green ) / difference + 4;
+                }
+
+                normalized_hue /= 6;
+            }
+
+            this.HueComponent = Math.round( normalized_hue * 360 );
+            this.SaturationComponent = Math.round( normalized_saturation * 100 );
+            this.LightnessComponent = Math.round( normalized_lightness * 100 );
+        }
+
+        // ~~
+
+        SetFromHueSaturationLightness(
+            )
+        {
+            var
+                normalized_blue,
+                normalized_green,
+                normalized_hue,
+                normalized_lightness,
+                normalized_red,
+                normalized_saturation,
+                x,
+                y,
+                z;
+
+            normalized_hue = this.HueComponent / 360;
+            normalized_saturation = this.SaturationComponent / 100;
+            normalized_lightness = this.LightnessComponent / 100;
+
+            if ( normalized_saturation === 0 )
+            {
+                normalized_red = normalized_green = normalized_blue = normalized_lightness;
+            }
+            else
+            {
+                function GetComponent(
+                    x,
+                    y,
+                    z
+                    )
+                {
+                    if ( z < 0 )
+                    {
+                        z += 1;
+                    }
+
+                    if ( z > 1 )
+                    {
+                        z -= 1;
+                    }
+
+                    if ( z < 1 / 6 )
+                    {
+                        return x + ( y - x ) * 6 * z;
+                    }
+
+                    if ( z < 1 / 2 )
+                    {
+                        return y;
+                    }
+
+                    if ( z < 2 / 3 )
+                    {
+                        return x + ( y - x ) * ( 2 / 3 - z ) * 6;
+                    }
+
+                    return x;
+                };
+
+                if ( normalized_lightness < 0 )
+                {
+                    normalized_lightness = 0;
+                }
+                else if ( normalized_lightness > 1 )
+                {
+                    normalized_lightness = 1;
+                }
+
+                if ( normalized_lightness < 0.5 )
+                {
+                    y = normalized_lightness * ( 1 + normalized_saturation );
+                }
+                else
+                {
+                    y = normalized_lightness + normalized_saturation - normalized_lightness * normalized_saturation;
+                }
+
+                x = 2 * normalized_lightness - y;
+
+                normalized_red = GetComponent( x, y, normalized_hue + 1 / 3 );
+                normalized_green = GetComponent( x, y, normalized_hue );
+                normalized_blue = GetComponent( x, y, normalized_hue - 1 / 3 );
+            }
+
+            this.RedComponent = Math.round( normalized_red * 255 );
+            this.GreenComponent = Math.round( normalized_green * 255 );
+            this.BlueComponent = Math.round( normalized_blue * 255 );
+        }
+
+        // ~~
+
         SetFromText(
             text
             )
@@ -258,25 +443,34 @@ input
     {
         var
             base_color,
-            base_lightness,
-            base_lightness_offset,
-            base_lightness_step,
+            base_color_name,
+            base_color_darken,
+            base_color_lighten,
             base_color_text,
+            base_shade,
+            base_shade_offset,
+            base_shade_step,
             closest_color,
             closest_color_distance,
             color,
             color_code,
             color_distance,
-            color_lightness,
+            color_shade,
             color_palette_code,
             complement_color,
             complement_color_text,
             reference_color,
             reference_color_text;
 
+        ComputationMode = document.getElementById( "computation-mode-select" ).value
+
         base_color_name = document.getElementById( "base-color-name-input" ).value;
         base_color_text = document.getElementById( "base-color-input" ).value;
         base_color = new COLOR( base_color_text );
+
+        base_color_shade = parseInt( document.getElementById( "base-color-shade-input" ).value );
+        base_color_darken = document.getElementById( "base-color-darken-input" ).value;
+        base_color_lighten = document.getElementById( "base-color-lighten-input" ).value;
 
         reference_color_text = document.getElementById( "reference-color-input" ).value;
         reference_color = new COLOR( reference_color_text );
@@ -288,51 +482,93 @@ input
         document.getElementById( "reference-color" ).outerHTML = reference_color.GetCode( "reference-color", false );
         document.getElementById( "complement-color" ).outerHTML = complement_color.GetCode( "complement-color", false );
 
-        base_lightness_step = parseInt( document.getElementById( "base-lightness-step-input" ).value );
+        base_shade_step = parseInt( document.getElementById( "base-shade-step-input" ).value );
 
         color_palette_code = "";
 
-        for ( base_lightness_offset = 0;
-              base_lightness_offset < 100;
-              base_lightness_offset += base_lightness_step )
+        for ( base_shade_offset = 0;
+              base_shade_offset < 100;
+              base_shade_offset += base_shade_step )
         {
-            for ( base_lightness = 0;
-                  base_lightness < 1000;
-                  base_lightness += 100 )
+            for ( base_shade = 0;
+                  base_shade < 1000;
+                  base_shade += 100 )
             {
-                color_lightness = base_lightness + base_lightness_offset;
-                color = new COLOR( base_color_text, color_lightness );
+                color_shade = base_shade + base_shade_offset;
+                color = new COLOR( base_color_text, base_color_shade, base_color_darken, base_color_lighten, color_shade );
                 color_palette_code += color.GetCode();
             }
         }
 
         document.getElementById( "color-palette" ).innerHTML = color_palette_code;
-        color_code = base_color_name + " = #" + base_color.GetText() + ";\n";
 
-        for ( base_lightness = 0;
-              base_lightness < 1000;
-              base_lightness += 100 )
+        if ( ComputationMode === "Tailwind" )
         {
-            for ( base_lightness_offset = 0;
-                  base_lightness_offset < 100;
-                  base_lightness_offset += base_lightness_step )
-            {
-                color_lightness = base_lightness + base_lightness_offset;
-                color = new COLOR( base_color_text, color_lightness );
+            color_code = "'" + base_color_name + "': {\n    DEFAULT: '" + base_color.GetText() + "',\n";
 
-                if ( color_lightness > 0
-                     && color_lightness != 500 )
+            for ( base_shade = 0;
+                  base_shade < 1000;
+                  base_shade += 100 )
+            {
+                for ( base_shade_offset = 0;
+                      base_shade_offset < 100;
+                      base_shade_offset += base_shade_step )
                 {
-                    color_code
-                        += base_color_name
-                           + color_lightness
-                           + " = "
-                           + color.InterpolationText.split( " " )[ 0 ]
-                           + "( "
-                           + base_color_name
-                           + ", "
-                           + color.InterpolationText.split( " " )[ 1 ]
-                           + " );\n";
+                    color_shade = base_shade + base_shade_offset;
+                    color = new COLOR( base_color_text, base_color_shade, base_color_darken, base_color_lighten, color_shade );
+
+                    if ( color_shade > 0 )
+                    {
+                        color_code
+                            += "    " + color_shade + ": '" + color.GetText() + "',\n";
+                    }
+                }
+            }
+
+            color_code += "},";
+        }
+        else
+        {
+            color_code = base_color_name + "Color = #" + base_color.GetText() + ";\n";
+
+            for ( base_shade = 0;
+                  base_shade < 1000;
+                  base_shade += 100 )
+            {
+                for ( base_shade_offset = 0;
+                      base_shade_offset < 100;
+                      base_shade_offset += base_shade_step )
+                {
+                    color_shade = base_shade + base_shade_offset;
+                    color = new COLOR( base_color_text, base_color_shade, base_color_darken, base_color_lighten, color_shade );
+
+                    if ( color_shade > 0 )
+                    {
+                        if ( color_shade === 500 )
+                        {
+                            color_code
+                                += base_color_name
+                                   + "Color"
+                                   + color_shade
+                                   + " = "
+                                   + base_color_name
+                                   + "Color;\n";
+                        }
+                        else
+                        {
+                            color_code
+                                += base_color_name
+                                   + "Color"
+                                   + color_shade
+                                   + " = "
+                                   + color.InterpolationText.split( " " )[ 0 ]
+                                   + "( "
+                                   + base_color_name
+                                   + "Color, "
+                                   + color.InterpolationText.split( " " )[ 1 ]
+                                   + " );\n";
+                        }
+                    }
                 }
             }
         }
@@ -344,11 +580,11 @@ input
         closest_color = null;
         closest_color_distance = 0;
 
-        for ( color_lightness = 0;
-              color_lightness <= 1000;
-              ++color_lightness )
+        for ( color_shade = 0;
+              color_shade <= 1000;
+              ++color_shade )
         {
-            color = new COLOR( base_color_text, color_lightness );
+            color = new COLOR( base_color_text, base_color_shade, base_color_darken, base_color_lighten, color_shade );
             color_distance = color.GetPerceivedDistance( reference_color );
 
             if ( closest_color === null
